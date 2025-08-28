@@ -208,6 +208,8 @@ export class JobsService {
         });
         await this.jobsRepo.save(toSave);
       },
+      true,
+      'Asia/Seoul',
     );
     return cronJob;
   }
