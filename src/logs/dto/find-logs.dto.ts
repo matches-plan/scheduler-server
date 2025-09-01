@@ -21,7 +21,7 @@ export class FindLogsDto {
   status?: LogStatus;
 
   @IsNumber()
-  jobId: number;
+  jobId?: number;
 
   @IsDate()
   from?: Date;

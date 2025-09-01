@@ -103,7 +103,13 @@ export class JobsService {
   async remove(id: number) {
     const job = await this.jobsRepo.findOne({ where: { id } });
     if (!job) throw new NotFoundException(`Job ${id} not found`);
-    this.schedulerRegistry.deleteCronJob(job.name);
+
+    try {
+      this.schedulerRegistry.deleteCronJob(job.name);
+    } catch (error) {
+      Logger.error(`No cron job found for job: ${job.name}`);
+    }
+
     await this.jobsRepo.remove(job); // 엔티티 훅 정상 동작
     return { ok: true };
   }
@@ -130,21 +136,16 @@ export class JobsService {
     const job = await this.jobsRepo.findOne({ where: { id } });
     if (!job) throw new NotFoundException(`Job ${id} not found`);
 
-    // 1) 상태 변경
-    job.status = JobStatus.PAUSED;
-    const savedJob = await this.jobsRepo.preload({
-      id: job.id,
-      status: JobStatus.PAUSED,
-    });
-    await this.jobsRepo.save(savedJob);
-
-    // 2) 스케줄러에서 제거
+    // 1) 스케줄러에서 제거
     try {
       this.schedulerRegistry.deleteCronJob(job.name);
     } catch (error) {
       Logger.error(`No cron job found for job: ${job.name}`);
     }
 
+    // 2) 상태 변경
+    job.status = JobStatus.PAUSED;
+    await this.jobsRepo.save(job);
     return { ok: true };
   }
 
@@ -169,6 +170,7 @@ export class JobsService {
 
     const toSave = await this.jobsRepo.preload({
       id: job.id,
+      lastRunAt: new Date(),
       nextRunAt: getNextRunAt(job.cron),
     });
     await this.jobsRepo.save(toSave);

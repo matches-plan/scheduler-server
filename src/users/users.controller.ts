@@ -6,6 +6,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -37,5 +38,15 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('me')
+  me(@Request() req) {
+    return {
+      id: req.user.id,
+      name: req.user.name,
+      createdAt: req.user.createdAt,
+    };
   }
 }
